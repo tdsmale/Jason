@@ -1,1 +1,1 @@
-A single-header C JSON parser. Small and Simple. See example.c for usage.
+A single-header C JSON parser, inspired by jsmn. Small and Simple. See example.c for usage. 
