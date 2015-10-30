@@ -1,0 +1,1 @@
+A single-header C JSON parser. See main.c for an example.
