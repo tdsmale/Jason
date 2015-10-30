@@ -49,7 +49,7 @@ int main(int argc, const char * argv[]) {
             }
         }
     }
-	
-	jason_Cleanup(&jason);
+    
+    jason_Cleanup(&jason);
     return 0;
 }

@@ -1,1 +1,1 @@
-A single-header C JSON parser. See main.c for an example.
+A single-header C JSON parser. Small and Simple. See example.c for usage.
