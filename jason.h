@@ -230,41 +230,14 @@ while(pointer < end && (*pointer == ' ' || *pointer == '\n' || *pointer == '\t' 
         return parentHash;
     }
     
-    jasonStatus jason_HashInsert(jason *jason, jasonValue *val, jasonValue *parent, const char *keyStr, int32_t keyLen)
+    jasonStatus jason_HashInsertDirect(jason *jason, jasonHashTable *table, jasonValue *val, uint32_t hash)
     {
-        val->Next = 0;
-        JASON_SETOFFSET(val->Parent, (parent - val));
-        
-        if(jason->KeyLookupTable.NumBuckets <= jason->KeyLookupTable.NumKeys)
-        {
-            size_t memLength = (jason->KeyLookupTable.NumKeys + 32) * sizeof(int32_t);
-            int32_t* buckets = jason->Malloc(&memLength);
-            int32_t numBuckets = (int32_t)(memLength / (sizeof(int32_t)));
-            if(numBuckets == 0)
-            {
-                return jasonStatus_Break(jasonStatus_OutOfMemory);
-            }
-            
-            if(jason->KeyLookupTable.Buckets)
-            {
-                memcpy(buckets, jason->KeyLookupTable.Buckets, sizeof(int32_t) * jason->KeyLookupTable.NumBuckets);
-                jason->Free(jason->KeyLookupTable.Buckets);
-            }
-            
-            memset(buckets + (sizeof(int32_t) * jason->KeyLookupTable.NumBuckets), 0, sizeof(int32_t) * (numBuckets - jason->KeyLookupTable.NumBuckets));
-            
-            jason->KeyLookupTable.NumBuckets = numBuckets;
-            jason->KeyLookupTable.Buckets = buckets;
-        }
-        
-        uint32_t hash = jason_HashKey(jason, parent, keyStr, keyLen);
-        jason->KeyLookupTable.NumKeys++;
-        uint32_t bucketIndex = hash % jason->KeyLookupTable.NumBuckets;
-        int keyIndex = jason->KeyLookupTable.Buckets[bucketIndex];
+        table->NumKeys++;
+        uint32_t bucketIndex = hash % table->NumBuckets;
+        int keyIndex = table->Buckets[bucketIndex];
         if(keyIndex == 0)
         {
-            JASON_SETOFFSET(jason->KeyLookupTable.Buckets[bucketIndex], (val - jason->RootValue));
-            return jasonStatus_Continue;
+            JASON_SETOFFSET(table->Buckets[bucketIndex], (val - jason->RootValue));
         }
         else
         {
@@ -287,6 +260,55 @@ while(pointer < end && (*pointer == ' ' || *pointer == '\n' || *pointer == '\t' 
         }
         
         return jasonStatus_Continue;
+    }
+    
+    jasonStatus jason_HashInsert(jason *jason, jasonValue *val, jasonValue *parent, const char *keyStr, int32_t keyLen)
+    {
+        val->Next = 0;
+        JASON_SETOFFSET(val->Parent, (parent - val));
+        
+        if(jason->KeyLookupTable.NumBuckets <= jason->KeyLookupTable.NumKeys)
+        {
+            jasonHashTable newTable;
+            memset(&newTable, 0, sizeof(jasonHashTable));
+
+            size_t memLength = (jason->KeyLookupTable.NumKeys + 32) * sizeof(int32_t);
+            newTable.Buckets = jason->Malloc(&memLength);
+            newTable.NumBuckets = (int32_t)(memLength / (sizeof(int32_t)));
+            
+            if(newTable.NumBuckets == 0)
+            {
+                return jasonStatus_Break(jasonStatus_OutOfMemory);
+            }
+            
+            memset(newTable.Buckets, 0, memLength);
+            
+            if(jason->KeyLookupTable.Buckets)
+            {
+                for(size_t i = 0; i < jason->KeyLookupTable.NumBuckets; i++)
+                {
+                    while(jason->KeyLookupTable.Buckets[i] != 0)
+                    {
+                        jasonValue *key = jason->RootValue + jason->KeyLookupTable.Buckets[i];
+                        jason->KeyLookupTable.Buckets[i] = key->Next;
+                        // re-insert
+                        
+                        uint32_t hash = jason_HashKey(jason, key + key->Parent, jasonValue_GetValue(key), jasonValue_GetValueLen(key));
+                        jasonStatus status = jason_HashInsertDirect(jason, &newTable, key, hash);
+                        if(status != jasonStatus_Continue)
+                        {
+                            return status;
+                        }
+                    }
+                }
+            }
+            
+            jason->Free(jason->KeyLookupTable.Buckets);
+            memcpy(&jason->KeyLookupTable, &newTable, sizeof(jasonHashTable));
+        }
+        
+        uint32_t hash = jason_HashKey(jason, parent, keyStr, keyLen);
+        return jason_HashInsertDirect(jason, &jason->KeyLookupTable, val, hash);
     }
     
     jasonValue *jason_HashLookup(jason *jason, jasonValue *parent, const char *keyStr, int32_t keyLen)
