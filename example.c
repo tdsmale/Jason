@@ -9,7 +9,8 @@
 #include "jason.h"
 #include <stdio.h>
 
-int main(int argc, const char * argv[]) {
+int main(int argc, const char * argv[])
+{
     const char *json = "{\"Users\":[{\"Name\":\"John\",\"Age\":25,\"Salary\":20000},{\"Name\":\"Mary\",\"Age\":42,\"Salary\":45000}]}";
     
     jason jason;

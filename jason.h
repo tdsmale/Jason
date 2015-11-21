@@ -92,7 +92,7 @@ while(pointer < end && (*pointer == ' ' || *pointer == '\n' || *pointer == '\t' 
     
 #define JASON_SETOFFSET(dest, len) \
     { \
-        if((int32_t)(len) >= INT_MAX || (int32_t)(len) <= INT_MIN) \
+        if(len >= INT_MAX || len <= INT_MIN) \
         { \
             return jasonStatus_Break(jasonStatus_IntegerOverflow); \
         } \
@@ -182,7 +182,7 @@ while(pointer < end && (*pointer == ' ' || *pointer == '\n' || *pointer == '\t' 
         }
     }
     
-    int jasonValue_GetValueLen(jasonValue *value)
+    int32_t jasonValue_GetValueLen(jasonValue *value)
     {
         jasonValueType type = jasonValue_GetType(value);
         
@@ -223,7 +223,7 @@ while(pointer < end && (*pointer == ' ' || *pointer == '\n' || *pointer == '\t' 
     
     uint32_t jason_HashKey(jason *jason, jasonValue *parent, const char *key, int32_t keyLen)
     {
-        uint32_t parentHash = jason->Hash((char*)&parent->Value, sizeof(intptr_t));
+        uint32_t parentHash = jason->Hash((char*)parent->Value, sizeof(intptr_t));
         uint32_t keyHash = jason->Hash((char*)key, keyLen);
         parentHash ^= keyHash + 0x9e3779b9 + (parentHash << 6) + (parentHash >> 2);
         
@@ -234,7 +234,7 @@ while(pointer < end && (*pointer == ' ' || *pointer == '\n' || *pointer == '\t' 
     {
         table->NumKeys++;
         uint32_t bucketIndex = hash % table->NumBuckets;
-        int keyIndex = table->Buckets[bucketIndex];
+        int32_t keyIndex = table->Buckets[bucketIndex];
         if(keyIndex == 0)
         {
             JASON_SETOFFSET(table->Buckets[bucketIndex], (val - jason->RootValue));
@@ -320,7 +320,7 @@ while(pointer < end && (*pointer == ' ' || *pointer == '\n' || *pointer == '\t' 
         
         uint32_t hash = jason_HashKey(jason, parent, keyStr, keyLen);
         uint32_t bucketIndex = hash % jason->KeyLookupTable.NumBuckets;
-        int first = jason->KeyLookupTable.Buckets[bucketIndex];
+        int32_t first = jason->KeyLookupTable.Buckets[bucketIndex];
         if(first != 0)
         {
             for(jasonValue *key = jason->RootValue + first; key != NULL; key = jasonValue_GetNextSibling(key))
@@ -352,7 +352,7 @@ while(pointer < end && (*pointer == ' ' || *pointer == '\n' || *pointer == '\t' 
         {
             case jasonValueType_Object:
             {
-                int numChildren = 0;
+                int32_t numChildren = 0;
                 
                 JASON_INCSTR((*str), strEnd);
                 JASON_SKIPWHITESPACE((*str), strEnd);
