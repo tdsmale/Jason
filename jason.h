@@ -235,29 +235,13 @@ while(pointer < end && (*pointer == ' ' || *pointer == '\n' || *pointer == '\t' 
         table->NumKeys++;
         uint32_t bucketIndex = hash % table->NumBuckets;
         int32_t keyIndex = table->Buckets[bucketIndex];
-        if(keyIndex == 0)
-        {
-            JASON_SETOFFSET(table->Buckets[bucketIndex], (val - jason->RootValue));
-        }
-        else
+        if(keyIndex != 0)
         {
             jasonValue *key = jason->RootValue + keyIndex;
-            jasonValue *prevKey = NULL;
-            
-            while(key != NULL)
-            {
-                prevKey = key;
-                jasonValue *nextKey = jasonValue_GetNextSibling(key);
-                
-                if(nextKey == NULL)
-                {
-                    JASON_SETOFFSET(key->Next, (val - key));
-                    break;
-                }
-                
-                key = nextKey;
-            }
+            JASON_SETOFFSET(val->Next, (key - val));
         }
+        
+        JASON_SETOFFSET(table->Buckets[bucketIndex], (val - jason->RootValue));
         
         return jasonStatus_Continue;
     }
