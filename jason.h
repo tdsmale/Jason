@@ -104,7 +104,6 @@ while(pointer < end && (*pointer == ' ' || *pointer == '\n' || *pointer == '\t' 
     
 #define JASON_STRINGIFY_CASE(str) case str: return #str
     
-    
     const char *jasonStatus_Describe(jasonStatus status)
     {
         switch(status)
@@ -558,6 +557,11 @@ while(pointer < end && (*pointer == ' ' || *pointer == '\n' || *pointer == '\t' 
     void jason_Cleanup(jason *jason)
     {
         jason->Free(jason->RootValue);
+        jason->Free(jason->KeyLookupTable.Buckets);
+        jason->MaxValues = 0;
+        jason->NumValues = 0;
+        jason->KeyLookupTable.NumBuckets = 0;
+        jason->KeyLookupTable.NumKeys = 0;
     }
     
     void *jason_Malloc(size_t *size)
